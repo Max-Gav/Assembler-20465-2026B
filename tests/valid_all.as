@@ -1,0 +1,36 @@
+mcro INIT
+add $0,$31,$1
+addi $1,-32768,$2
+mcroend
+INIT
+sub $31,$0,$30
+and $1,$2,$3
+or $4,$5,$6
+nor $7,$8,$9
+move $10,$11
+mvhi $12,$13
+mvlo $14,$15
+subi $31,32767,$0
+andi $1,0,$2
+ori $2,-1,$3
+nori $3,1,$4
+beq $0,$0,FORWARD
+bne $1,$2,BACK
+BACK: blt $1,$2,FORWARD
+bgt $2,$1,BACK
+lb $0,0,$31
+sb $31,-1,$0
+lw $1,32767,$2
+sw $2,-32768,$3
+lh $4,15,$5
+sh $5,-15,$4
+jmp FORWARD
+jmp $31
+la DATA
+call FORWARD
+FORWARD: hlt
+DATA: .db 0,1,-1,127,-128
+.dh 0,1,-1,32767,-32768
+.dw 0,1,-1,2147483647,-2147483648
+TEXT: .asciz "2026B example"
+EMPTY: .asciz ""
