@@ -1,10 +1,6 @@
 /*
- * Module: preprocessor.c
- * Collects legal mcro definitions and expands standalone invocations.  Macro
- * definitions disappear from .am.  State and owned body lines are destroyed
- * after every source, which prevents cross-file macro leakage. It assumes an
- * ordinary text source, uses parser.c for reserved-name rules, and supplies
- * the expanded source consumed by assembler.c.
+ * Macro validation and expansion.
+ * Definitions are kept per source and omitted from the expanded .am file.
  */
 #include "preprocessor.h"
 #include "assembler_types.h"
@@ -23,6 +19,7 @@ typedef struct Macro {
     char *name;
     MacroLine *body;
     MacroLine *tail;
+    int definition_end_line;
     struct Macro *next;
 } Macro;
 
@@ -46,7 +43,7 @@ static Macro *find_macro(Macro *head, const char *name)
     return NULL;
 }
 
-/* Releases macro names, body lines, and list nodes after one source. */
+/* Free the macro list and its body lines. */
 static void destroy_macros(Macro *head)
 {
     Macro *next_macro;
@@ -98,7 +95,7 @@ static int words_of(const char *text, char words[3][MAX_TOKEN_LENGTH])
     size_t length;
     while (*text != '\0') {
         while (isspace((unsigned char)*text)) ++text;
-        if (*text == '\0' || *text == ';') break;
+        if (*text == '\0') break;
         start = text;
         while (*text != '\0' && !isspace((unsigned char)*text)) ++text;
         length = (size_t)(text - start);
@@ -114,7 +111,7 @@ static int words_of(const char *text, char words[3][MAX_TOKEN_LENGTH])
 /* Reports a one-based macro-stage diagnostic for the original source path. */
 static void macro_error(const char *path, int line, const char *message)
 {
-    fprintf(stderr, "%s:%d: error: %s\n", path, line, message);
+    printf("%s:%d: error: %s\n", path, line, message);
 }
 
 /* First scan validates and stores definitions while continuing after errors. */
@@ -143,6 +140,7 @@ static int collect_macros(FILE *source, const char *path, Macro **macros)
                     macro_error(path, line_number, "mcroend must appear alone");
                     ++errors;
                 }
+                current->definition_end_line = line_number;
                 current = NULL;
             } else {
                 body_line = (MacroLine *)calloc(1, sizeof(MacroLine));
@@ -247,6 +245,8 @@ static int expand_macros(FILE *source, FILE *output, const char *path, Macro *ma
             continue;
         }
         macro = count > 0 ? find_macro(macros, words[0]) : NULL;
+        if (macro != NULL && line_number <= macro->definition_end_line)
+            macro = NULL;
         if (macro != NULL) {
             if (count != 1) {
                 macro_error(path, line_number, "macro invocation must appear alone");
@@ -269,7 +269,7 @@ int preprocess_source(const char *source_path, const char *am_path)
     Macro *macros = NULL;
     int success;
     if (source == NULL) {
-        fprintf(stderr, "%s: error: cannot open source file\n", source_path);
+        printf("%s: error: cannot open source file\n", source_path);
         return 0;
     }
     success = collect_macros(source, source_path, &macros);
@@ -280,7 +280,7 @@ int preprocess_source(const char *source_path, const char *am_path)
         rewind(source);
         output = fopen(am_path, "wb");
         if (output == NULL) {
-            fprintf(stderr, "%s: error: cannot create macro output\n", source_path);
+            printf("%s: error: cannot create macro output\n", source_path);
             success = 0;
         } else {
             success = expand_macros(source, output, source_path, macros);

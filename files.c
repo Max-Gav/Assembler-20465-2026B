@@ -1,10 +1,4 @@
-/*
- * Module: files.c
- * Owns path derivation, stale-output cleanup, and exact 2026B output formats.
- * Object bytes are already host-independent when they reach this module. It
- * consumes AssemblyContext images produced by assembler.c and assumes output
- * paths are derived from an already validated `.as` source path.
- */
+/* Output-path handling, stale-file cleanup, and assembler output files. */
 #include "files.h"
 #include <stdlib.h>
 #include <string.h>
@@ -89,7 +83,7 @@ static int write_object(const AssemblyContext *context, const char *path)
     return 1;
 }
 
-/* Emits entries in table order; the official format does not prescribe order. */
+/* Write entry symbols in symbol-table order. */
 static int write_entries(const AssemblyContext *context, const char *path)
 {
     Symbol *symbol;

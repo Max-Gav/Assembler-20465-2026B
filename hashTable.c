@@ -1,10 +1,4 @@
-/*
- * Module: hashTable.c
- * Implements the symbol table as a dynamic linked collection with owned
- * names, independent attributes, deterministic insertion order, and complete
- * destruction.  It assumes validated names from parser.c and is used by the
- * two assembly passes in assembler.c.
- */
+/* Symbol storage, lookup, relocation, and cleanup. */
 #include "hashTable.h"
 #include <stdlib.h>
 #include <string.h>

@@ -1,10 +1,6 @@
 /*
- * Module: parser.c
- * Tokenizes and validates the complete 2026B line grammar.  It rejects
- * malformed commas and trailing text early while leaving symbol resolution
- * and final instruction encoding to the assembly passes. Input is a NUL-
- * terminated logical line of at most 80 characters. Shared records come from
- * assembler_types.h and consumers are preprocessor.c and assembler.c.
+ * Source-line parsing and basic operand validation.
+ * Symbol resolution and instruction encoding are left to the assembly passes.
  */
 #include "parser.h"
 #include <ctype.h>
@@ -181,6 +177,7 @@ static int parse_asciz(char *cursor, ParsedLine *parsed, char *message,
                        int message_size)
 {
     char *closing;
+    char *character;
     size_t length;
     while (isspace((unsigned char)*cursor))
         ++cursor;
@@ -192,6 +189,14 @@ static int parse_asciz(char *cursor, ParsedLine *parsed, char *message,
     if (closing == NULL) {
         format_message(message, message_size, "unterminated .asciz string");
         return 0;
+    }
+    for (character = cursor + 1; character < closing; ++character) {
+        unsigned char value = (unsigned char)*character;
+        if (value < 32 || value > 126) {
+            format_message(message, message_size,
+                           ".asciz string contains a non-printable character");
+            return 0;
+        }
     }
     length = (size_t)(closing - cursor - 1);
     memcpy(parsed->string_value, cursor + 1, length);

@@ -1,11 +1,7 @@
 /*
- * Module: assembler.c
- * Coordinates the 2026B two-pass assembler.  The first pass builds symbols,
- * code placeholders, and packed data.  After data relocation, the second
- * pass resolves branches, J addresses, entries, and external-use records.
- * Every invocation owns a fresh context to guarantee multi-file isolation.
- * It assumes parser-validated fields before encoding and collaborates with
- * preprocessor, parser, symbol, encoding, and file-output modules.
+ * Two-pass assembly and per-source state management.
+ * The first pass builds the images and symbol table; the second resolves
+ * symbols and entry requests.
  */
 #include "assembler.h"
 #include "assembler_types.h"
@@ -22,9 +18,9 @@
 static void report_error(AssemblyContext *context, int line, const char *message)
 {
     if (line > 0)
-        fprintf(stderr, "%s:%d: error: %s\n", context->source_path, line, message);
+        printf("%s:%d: error: %s\n", context->source_path, line, message);
     else
-        fprintf(stderr, "%s: error: %s\n", context->source_path, message);
+        printf("%s: error: %s\n", context->source_path, message);
     ++context->errors;
 }
 
@@ -56,10 +52,8 @@ static void define_label(AssemblyContext *context, const ParsedLine *parsed,
     int data;
     if (parsed->label[0] == '\0')
         return;
-    if (parsed->kind == LINE_ENTRY || parsed->kind == LINE_EXTERN) {
-        report_error(context, line, "label is not allowed on .entry or .extern");
+    if (parsed->kind == LINE_ENTRY || parsed->kind == LINE_EXTERN)
         return;
-    }
     code = parsed->kind == LINE_INSTRUCTION;
     data = parsed->kind == LINE_DB || parsed->kind == LINE_DH ||
            parsed->kind == LINE_DW || parsed->kind == LINE_ASCIZ;
@@ -385,18 +379,18 @@ int assemble_source(const char *source_path)
     remove_stale_outputs(source_path, 1);
     am_path = replace_extension(source_path, ".am");
     if (am_path == NULL) {
-        fprintf(stderr, "%s: error: cannot derive output paths\n", source_path);
+        printf("%s: error: cannot derive output paths\n", source_path);
         return 0;
     }
     context.am_path = am_path;
     if (preprocess_source(source_path, am_path)) {
-        first_pass(&context);
-        second_pass(&context);
-        if (context.errors == 0) {
-            if (write_output_files(&context))
-                success = 1;
-            else
-                report_error(&context, 0, "cannot write output files");
+        if (first_pass(&context)) {
+            if (second_pass(&context)) {
+                if (write_output_files(&context))
+                    success = 1;
+                else
+                    report_error(&context, 0, "cannot write output files");
+            }
         }
     }
     if (!success)

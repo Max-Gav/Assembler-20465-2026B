@@ -59,7 +59,7 @@ typedef struct ParsedLine {
     char string_value[MAX_SOURCE_LINE_LENGTH + 1]; /* Unquoted .asciz bytes. */
 } ParsedLine;
 
-/* Symbol attributes are independent flags, matching the official table. */
+/* A symbol may be code/data, external, or marked as an entry. */
 typedef struct Symbol {
     char *name;
     long value;

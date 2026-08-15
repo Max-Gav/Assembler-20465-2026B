@@ -1,9 +1,6 @@
 /*
- * Module: encoding.c
- * Constructs 32-bit machine words and serializes all numeric values in
- * little-endian order. No host integer is written as raw memory and all shifts
- * operate on unsigned values. It assumes validated fields from assembler.c
- * and uses the byte-image types defined in assembler_types.h.
+ * Machine-code encoding and byte-image helpers.
+ * Instructions and multi-byte data are stored in little-endian order.
  */
 #include "encoding.h"
 #include <stdlib.h>

@@ -1,7 +1,7 @@
 #ifndef FILES_H
 #define FILES_H
 
-/* Path, stale-file cleanup, and official text-output interface. */
+/* Paths, stale-file cleanup, and text-output helpers. */
 
 #include "assembler_types.h"
 #include <stdio.h>
@@ -15,7 +15,7 @@ char *replace_extension(const char *source_path, const char *suffix);
 /* Removes stale .am/.ob/.ent/.ext outputs belonging to source_path. */
 void remove_stale_outputs(const char *source_path, int remove_am);
 
-/* Writes the official object, entry, and external files. */
+/* Writes the object, entry, and external files. */
 int write_output_files(const AssemblyContext *context);
 
 #endif

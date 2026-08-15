@@ -1,7 +1,7 @@
 #ifndef ENCODING_H
 #define ENCODING_H
 
-/* Host-independent 2026B bit-field and byte-image encoding interface. */
+/* Bit-field and byte-image encoding interface. */
 
 #include "assembler_types.h"
 
